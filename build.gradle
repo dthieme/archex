@@ -1,0 +1,73 @@
+defaultTasks 'clean', 'build'
+
+def junitVersion = '5.5.2'
+
+
+allprojects {
+    apply plugin: 'idea'
+
+
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+        jcenter()
+    }
+
+    idea {
+        module {
+            downloadJavadoc = true
+            downloadSources = true
+        }
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'java-library'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+
+
+    allprojects {
+        tasks.withType(JavaCompile) {
+            sourceCompatibility = '17'
+            targetCompatibility = '17'
+        }
+    }
+
+    dependencies {
+        testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
+        testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+    }
+
+    test {
+        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
+            jvmArgs('--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED')
+            jvmArgs('--add-opens', 'java.base/java.net=ALL-UNNAMED')
+            jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
+            jvmArgs('--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED')
+        }
+
+        useJUnitPlatform()
+    }
+}
+
+project(':example') {
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+
+    def generatedDir = file("${buildDir}/generated-src")
+    sourceSets {
+        main.java.srcDir generatedDir
+    }
+
+
+}
