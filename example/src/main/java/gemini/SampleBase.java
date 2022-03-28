@@ -5,14 +5,16 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class SampleBase {
     static final Counter<Theo> counter = new Counter<>();
+    static final AtomicLong eventCounter = new AtomicLong(0);
     static <T> BlockingQueue<T> newQueue() { return new ArrayBlockingQueue<>(5000);}
     static <K,V> Map<K,V> newMap(){return new HashMap<>();}
 
-    public record Quote(int instrument, long price) {}
-    public record Theo(int underlyingInstrument, int optionInstrument, double tv) {}
+    public record Quote(long eventId, int instrument, long price) {}
+    public record Theo(long eventId, int underlyingInstrument, int optionInstrument, double tv) {}
     public record QuoteSource(int instrumentStart, int instrumentEnd, BlockingQueue<Quote> theoCalcQueue) {}
     public record TheoCalculator(BlockingQueue<Quote> quoteQueue, BlockingQueue<Theo> destQueue, Map<Integer, Quote> quoteMap) {}
     public record TradingStrategy(BlockingQueue<Theo> theoQueue) {}
@@ -23,7 +25,7 @@ public class SampleBase {
             while (true) {
                 for (int instrumentId = quoteSource.instrumentStart; instrumentId <= quoteSource.instrumentEnd; instrumentId++)
                 {
-                    final Quote q = new Quote(instrumentId, instrumentId);
+                    final Quote q = new Quote(eventCounter.incrementAndGet(), instrumentId, instrumentId);
                     while (! quoteSource.theoCalcQueue.offer(q)) {
                     }
                 }
@@ -52,7 +54,7 @@ public class SampleBase {
                 }
                 if (optionQuote != null && underlyingQuote != null) {
                     final double tv = (underlyingQuote.price + optionQuote.price) / 4.0;
-                    final Theo theo = new Theo(underlyingQuote.instrument, optionQuote.instrument, tv);
+                    final Theo theo = new Theo(eventCounter.incrementAndGet(), underlyingQuote.instrument, optionQuote.instrument, tv);
                     while (!calculator.destQueue.offer(theo)) {
                     }
                 }

@@ -5,10 +5,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static gemini.SampleBase.eventCounter;
 
 public class SampleTwo {
     static final Counter<SampleBase.Theo> counter = new Counter<>();
     static <K,V> Map<K,V> newBook(){return new ConcurrentHashMap<>();}
+    static final Map<Integer, Long> eventIdMap = new ConcurrentHashMap<>();
+    static final Map<Integer, Long> theoIdProcessed = new ConcurrentHashMap<>();
+    static final AtomicLong theoId = new AtomicLong(0);
+
 
     public record QuoteSource(int instrumentStart, int instrumentEnd, Map<Integer, SampleBase.Quote> destBook) {}
     public record TheoCalculator(int instrumentStart, int instrumentEnd, Map<Integer, SampleBase.Quote> quoteBook, Map<Integer, SampleBase.Theo> theoBook) {}
@@ -20,7 +27,7 @@ public class SampleTwo {
             while (true) {
                 for (int instrumentId = quoteSource.instrumentStart; instrumentId <= quoteSource.instrumentEnd; instrumentId++)
                 {
-                    final SampleBase.Quote q = new SampleBase.Quote(instrumentId, instrumentId);
+                    final SampleBase.Quote q = new SampleBase.Quote(eventCounter.incrementAndGet(), instrumentId, instrumentId);
                     quoteSource.destBook.put(q.instrument(), q);
                 }
             }
@@ -36,9 +43,11 @@ public class SampleTwo {
                     final int optionId = -instrumentId;
                     final SampleBase.Quote underlyingQuote = calculator.quoteBook.get(instrumentId);
                     SampleBase.Quote optionQuote = calculator.quoteBook.get(optionId);
-                    if (underlyingQuote != null && optionQuote != null) {
+                    final long lastUnderlyingIdProcessed = eventIdMap.getOrDefault(instrumentId, 0L);
+                    final long lastOptionsIdProcessed = eventIdMap.getOrDefault(instrumentId, 0L);
+                    if (underlyingQuote != null && optionQuote != null && (optionQuote.eventId() > lastOptionsIdProcessed || underlyingQuote.eventId() > lastUnderlyingIdProcessed)) {
                         final double tv = (underlyingQuote.price() + optionQuote.price()) / 4.0;
-                        final SampleBase.Theo theo = new SampleBase.Theo(underlyingQuote.instrument(), optionQuote.instrument(), tv);
+                        final SampleBase.Theo theo = new SampleBase.Theo(theoId.incrementAndGet(), underlyingQuote.instrument(), optionQuote.instrument(), tv);
                         calculator.theoBook.put(instrumentId, theo);
                     }
                 }
@@ -54,7 +63,12 @@ public class SampleTwo {
                 {
                     final SampleBase.Theo t = strategy.theoBook.get(instrumentId);
                     if (t != null) {
-                        counter.event(t);
+                        final long maxTheoIdForInstrument = theoIdProcessed.getOrDefault(instrumentId, -1L);
+                        if (t.eventId() > maxTheoIdForInstrument) {
+                            counter.event(t);
+                            theoIdProcessed.put(instrumentId, maxTheoIdForInstrument);
+                        }
+
                     }
 
                 }
