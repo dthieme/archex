@@ -1,0 +1,24 @@
+[0.010s][info][gc,init] Initializing The Z Garbage Collector
+[0.010s][info][gc,init] Version: 17.0.1+12-LTS-39 (release)
+[0.010s][info][gc,init] NUMA Support: Disabled
+[0.010s][info][gc,init] CPUs: 16 total, 16 available
+[0.010s][info][gc,init] Memory: 32638M
+[0.010s][info][gc,init] Large Page Support: Disabled
+[0.010s][info][gc,init] GC Workers: 4 (dynamic)
+[0.010s][info][gc,init] Address Space Type: Contiguous/Unrestricted/Complete
+[0.011s][info][gc,init] Address Space Size: 16384M x 3 = 49152M
+[0.011s][info][gc,init] Min Capacity: 1024M
+[0.011s][info][gc,init] Initial Capacity: 1024M
+[0.011s][info][gc,init] Max Capacity: 1024M
+[0.011s][info][gc,init] Medium Page Size: 32M
+[0.011s][info][gc,init] Pre-touch: Disabled
+[0.011s][info][gc,init] Uncommit: Implicitly Disabled (-Xms equals -Xmx)
+[0.036s][info][gc,init] Runtime Workers: 10
+[0.037s][info][gc     ] Using The Z Garbage Collector
+[0.042s][info][gc,metaspace] CDS archive(s) mapped at: [0x0000000800000000-0x0000000800bc0000-0x0000000800bc0000), size 12320768, SharedBaseAddress: 0x0000000800000000, ArchiveRelocationMode: 0.
+[0.042s][info][gc,metaspace] Compressed class space mapped at: 0x0000000800c00000-0x0000000840c00000, reserved size: 1073741824
+[0.042s][info][gc,metaspace] Narrow klass base: 0x0000000800000000, Narrow klass shift: 0, Narrow klass range: 0x100000000
+[0.172s][info][gc,heap,exit] Heap
+[0.172s][info][gc,heap,exit]  ZHeap           used 6M, capacity 1024M, max capacity 1024M
+[0.172s][info][gc,heap,exit]  Metaspace       used 301K, committed 384K, reserved 1056768K
+[0.172s][info][gc,heap,exit]   class space    used 19K, committed 64K, reserved 1048576K

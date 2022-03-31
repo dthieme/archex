@@ -1,0 +1,1 @@
+%JAVA_HOME%/bin/java -Xms1g -Xmx1g -Xloggc:zgc -XX:+PrintGCDetails -XX:+UseZGC -cp ../example/build/classes/java/main gemini.SampleBase

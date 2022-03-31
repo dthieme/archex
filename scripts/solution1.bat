@@ -1,0 +1,1 @@
+%JAVA_HOME%/bin/java  -Xms1g -Xmx1g -Xloggc:pargc -XX:+PrintGCDetails  -XX:+UseParallelGC  ../example/build/classes/java/main  gemini.SampleBase
