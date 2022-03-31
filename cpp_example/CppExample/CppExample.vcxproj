@@ -117,10 +117,15 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalModuleDependencies>%(AdditionalModuleDependencies)</AdditionalModuleDependencies>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalHeaderUnitDependencies>%(AdditionalHeaderUnitDependencies)</AdditionalHeaderUnitDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -143,10 +148,19 @@
     <ClCompile Include="CppExample.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="btree.h" />
     <ClInclude Include="bucket_container.hh" />
     <ClInclude Include="cuckoohash_config.hh" />
     <ClInclude Include="cuckoohash_map.hh" />
     <ClInclude Include="cuckoohash_util.hh" />
+    <ClInclude Include="meminfo.h" />
+    <ClInclude Include="phmap.h" />
+    <ClInclude Include="phmap_base.h" />
+    <ClInclude Include="phmap_bits.h" />
+    <ClInclude Include="phmap_config.h" />
+    <ClInclude Include="phmap_dump.h" />
+    <ClInclude Include="phmap_fwd_decl.h" />
+    <ClInclude Include="phmap_utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

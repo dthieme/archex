@@ -1,6 +1,5 @@
 
-#include "cuckoohash_config.hh"
-#include "cuckoohash_map.hh"
+
 #include <iostream>
 #include <queue>
 #include <thread>
@@ -11,7 +10,8 @@
 #include <sstream>
 #include <unordered_map>
 #include <optional>
-
+#include "phmap.h"
+#include <inttypes.h>
 
 
 std::atomic_long event_id = 1;
@@ -20,6 +20,26 @@ struct Quote
 	long event_id;
 	int instrument;
 	long price;
+
+	Quote() = default;
+	Quote(long e, int i, long p) : event_id(e), instrument(i), price(p) {}
+	Quote(const Quote& other) : event_id(other.event_id), instrument(other.instrument), price(other.price) {}
+	Quote(Quote&& other) noexcept: event_id(std::move(other.event_id)), instrument(std::move(other.instrument)), price(std::move(other.price)) {}
+	Quote & operator=(const Quote& other)
+	{
+		event_id = other.event_id;
+		instrument = other.instrument;
+		price = other.price;
+		return *this;
+	}
+	Quote & operator=(const Quote&& other) noexcept
+	{
+		event_id = std::move(other.event_id);
+		instrument = std::move(other.instrument);
+		price = std::move(other.price);
+		return *this;
+	}
+
 };
 std::mutex print_mutex;
 std::ostream & operator<<(std::ostream &out, const Quote &q)
@@ -35,6 +55,29 @@ struct Theo
 	int underlying_instrument;
 	int option_instrument;
 	double tv;
+
+	Theo() = default;
+	Theo(long e, int u, int o, double t) : event_id(e), underlying_instrument(u), option_instrument(o), tv(t) {}
+	Theo(const Theo & other) : event_id(other.event_id), underlying_instrument(other.underlying_instrument), option_instrument(other.option_instrument), tv(other.tv) {}
+	Theo(Theo && other) noexcept : event_id(std::move(other.event_id)), underlying_instrument(std::move(other.underlying_instrument)), option_instrument(std::move(other.option_instrument)), tv(std::move(other.tv)) {}
+	Theo& operator=(const Theo & other)
+	{
+		event_id = other.event_id;
+		option_instrument = other.option_instrument;
+		underlying_instrument = other.underlying_instrument;
+		tv = other.tv;
+		return *this;
+	}
+	Theo& operator=(const Theo && other) noexcept
+	{
+		event_id = std::move(other.event_id);
+		option_instrument = std::move(other.option_instrument);
+		underlying_instrument = std::move(other.underlying_instrument);
+		tv = std::move(other.tv);
+		return *this;
+	}
+
+
 };
 std::ostream & operator<<(std::ostream &out, const Theo &t)
 {
@@ -43,26 +86,41 @@ std::ostream & operator<<(std::ostream &out, const Theo &t)
 	return out;
 }
 
+
 template <typename T>
 class CoalescingQueue
 {
 private:
-	libcuckoo::cuckoohash_map<int, T> m_map;
-	
+	//folly::ConcurrentHashMap<int, T> m_map;
+	//libcuckoo::cuckoohash_map<uint32_t, T> m_map;
+	phmap::parallel_flat_hash_map<int, T> m_map;
+
 public:
-	std::optional<T> take(const int instrument_id)
+
+	using hash_t = phmap::parallel_flat_hash_map<int32_t, T>;
+	CoalescingQueue() : m_map(phmap::parallel_flat_hash_map<int, T>(32))
 	{
-		T t;
-		if (m_map.find(instrument_id, t))
+		for (int i = -200000; i <= 200000; i++)
 		{
-			return t;
+			m_map.insert(hash_t::value_type(i, T{}));
 		}
-		return std::nullopt;
 	}
 
-	void push(const T& item, const int id)
+	std::optional<T> take(const int instrument_id)
 	{
-		m_map.insert(id, item);
+		const auto f = m_map.find(instrument_id);
+		if (f == m_map.end())
+		{
+			return std::nullopt;
+		}
+		return f->second;
+	}
+
+
+	void push(const T &item, const int id)
+	{
+		m_map.insert(hash_t::value_type(id, item));
+		
 	}
 };
 
@@ -155,16 +213,17 @@ public:
 
 	void count(const Theo& t)
 	{
-		std::unique_lock counter_lock(m_counter_mutex);
-		if (m_event_id_map.contains(t.underlying_instrument) && t.event_id < m_event_id_map.at(t.underlying_instrument))
-			return;
-		m_event_id_map.insert_or_assign(t.underlying_instrument, t.event_id);
+		//std::unique_lock counter_lock(m_counter_mutex);
+		//if (m_event_id_map.contains(t.underlying_instrument) && t.event_id < m_event_id_map.at(t.underlying_instrument))
+		//	return;
+		//m_event_id_map.insert_or_assign(t.underlying_instrument, t.event_id);
 		const auto t1 = std::chrono::system_clock::now();
 		const auto num_evts = m_num_events += 1;
 		const auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - m_start_time).count();
 		if (elapsed_ns > ONE_SECOND)
 		{
 
+			std::unique_lock counter_lock(m_counter_mutex);
 			const auto seconds_elapsed = elapsed_ns / ONE_SECOND;
 			const auto events_per_second = num_evts * seconds_elapsed;
 			std::stringstream ss;
@@ -208,7 +267,8 @@ public:
 			{
 				for (auto instrument_id = m_instrument_start; instrument_id <= m_instrument_end; ++instrument_id)
 				{
-					m_calc_queue->push(Quote{ ++event_id,instrument_id,instrument_id }, instrument_id);
+					auto q = Quote{ ++event_id,instrument_id,instrument_id };
+					m_calc_queue->push(q, instrument_id);
 				}
 			}
 		};
@@ -247,7 +307,8 @@ public:
 					if (underlying_quote && option_quote)
 					{
 						const auto tv = (underlying_quote.value().price + option_quote.value().price * .2) / 4.0;
-						m_dest_queue->push(Theo{ ++event_id, underlying_quote->instrument, option_quote->instrument, tv }, instrument_id);
+						auto theo = Theo{ ++event_id, underlying_quote->instrument, option_quote->instrument, tv };
+						m_dest_queue->push(theo, instrument_id);
 					}
 				}
 			}
@@ -456,11 +517,28 @@ void run_queued_sample()
 	}
 }
 
+void count_object_allocation()
+{
+	Counter c{};
+	long event_id = 1;
+	while (true)
+	{
+		c.count(Theo{ ++event_id, 1, -1, 1.2 });
+	}
+}
+
 int main()
 {
-	std::cout << "Running sample\n";
-	//run_locked_coalescing_sample();
-	run_coalescing_sample();
-	//run_queued_sample();
-
+	try
+	{
+		std::cout << "Running sample\n";
+		//run_locked_coalescing_sample();
+		run_coalescing_sample();
+		//run_queued_sample();
+		//count_object_allocation();
+	}
+	catch (const std::exception& ex)
+	{
+		std::cout << "Caught " << ex.what() << "\n";
+	}
 }
