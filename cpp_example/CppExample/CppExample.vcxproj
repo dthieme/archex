@@ -142,6 +142,12 @@
   <ItemGroup>
     <ClCompile Include="CppExample.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="bucket_container.hh" />
+    <ClInclude Include="cuckoohash_config.hh" />
+    <ClInclude Include="cuckoohash_map.hh" />
+    <ClInclude Include="cuckoohash_util.hh" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

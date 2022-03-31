@@ -19,4 +19,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cuckoohash_util.hh">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cuckoohash_config.hh">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bucket_container.hh">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cuckoohash_map.hh">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
